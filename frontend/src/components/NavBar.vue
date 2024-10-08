@@ -61,16 +61,15 @@ export default {
     box-shadow: 0 0 5px #000000;
     position: relative;
 }
-
 .title > a {
     font-size: 1.4em;
     font-weight: bold;
     color: #2c3e50 !important;
 }
-
+/*
 .menu-icon {
-    display: none; /* 隱藏漢堡圖示，除非是小螢幕 */
-}
+    display: none;  隱藏漢堡圖示，除非是小螢幕 
+}*/
 
 .options {
     list-style: none;
@@ -79,7 +78,7 @@ export default {
 }
 
 .navbar li {
-    color: #575B5D;
+    color: #202223;
     margin: 0 .5em;
     font-size: 1.2em;
 }
@@ -111,18 +110,18 @@ export default {
         cursor: pointer;
         flex-direction: column;
         justify-content: space-around;
-        height: 24px;
-        width: 30px;
+        height: 32px;
+        width: 36px;
         position: absolute;
-        top: 10px;
-        right: 10px;
+        top: 20px;
+        right: 20px;
     }
 
     .menu-icon div {
         width: 100%;
-        height: 4px;
+        height: 3px;
         background-color: black;
-        margin: 3px 0;
+        margin: 2px 0;
     }
 
     .options {
@@ -137,8 +136,9 @@ export default {
     .options li {
         width: 100%;
         padding: 1em;
-        text-align: center;
-        border-bottom: 1px solid #ddd;
+        /*text-align: center;*/
+        margin: 0 0;
+        border-bottom: 2px solid #ddd;
     }
 
     .options li:last-child {
@@ -168,4 +168,5 @@ export default {
         display: none; /* 隱藏漢堡選單 */
     }
 }
+
 </style>

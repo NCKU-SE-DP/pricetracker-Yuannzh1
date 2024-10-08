@@ -120,4 +120,12 @@ export default {
 .search-bar button:hover{
     cursor: pointer;
 }
+@media (max-width: 768px) {
+    h1{
+        text-align: center;
+    }
+    .wrapper{
+        padding: 0 0;
+    }
+}
 </style>

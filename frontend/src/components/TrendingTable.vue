@@ -95,6 +95,8 @@ export default {
 <style scoped>
 .trending-table {
     margin-top: 2em;
+    overflow-x: auto; /* 當內容過大時，允許水平滾動 */
+    white-space: nowrap; /* 防止表格內容換行 */
 }
 
 table {
@@ -107,5 +109,13 @@ td {
     border: 1px solid #ccc;
     padding: 0.5em;
     text-align: center;
+}
+@media (min-width: 768px) {
+    .trending-table {
+        width:100%
+    }
+    table {
+        min-width: 600px; /* 設置最小寬度，讓表格內容可以滾動 */
+    }
 }
 </style>

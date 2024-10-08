@@ -95,4 +95,9 @@ h2{
     border-radius: 1em;
     padding: 2em;
 }
+@media (max-width: 768px) {
+    h2{
+        text-align: center;
+    }
+}
 </style>
