@@ -32,14 +32,14 @@ app.dependency_overrides[session_opener] = override_session_opener
 client = TestClient(app)
 
 @pytest.fixture(scope="module")
-def clear_users():
+def clear_users_before_tests():
     # 將變數 db 改為 database_session，更具描述性
     with next(override_session_opener()) as database_session:
         database_session.query(User).delete()
         database_session.commit()
 
 @pytest.fixture(scope="module")
-def test_user(clear_users):
+def test_user(clear_users_before_tests):
     hashed_password = pwd_context.hash("testpassword")
 
     # 將變數 db 改為 database_session，更具描述性
