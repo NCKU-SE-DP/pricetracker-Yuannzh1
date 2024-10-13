@@ -97,22 +97,45 @@ export default {
 .selects {
     display: flex;
     justify-content: flex-start;
+    flex-wrap: wrap; /* 允許在空間不足時換行 */
+    gap: 1em; /* 選單間的間距，避免擁擠 */
 }
 
 .selects>select {
     padding: .5em;
     font-size: 1.1em;
-    margin-right: 1em;
+    /*margin-right: 1em;*/
     border-radius: .5em;
     border: 1px solid #ccc;
     outline: none;
     cursor: pointer;
     appearance: auto !important;
+    min-width: 150px; /* 避免下拉選單過小 */
+    flex: 1; /* 選單根據空間自適應 */
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .visualize > * {
     flex: 1 1 50%;
     box-sizing: border-box;
     padding: 1em;
+}
+@media (max-width: 768px) {
+    h1 {
+        text-align: center;
+    }
+    .selects {
+        display: flex;
+        flex-direction: column; /* 在小螢幕時每個選單占滿整行 */
+        align-items: stretch;
+    }
+    .selects > select {
+        width: 100%; /* 占滿整行 */
+        margin-bottom: 1em; /* 增加下方空間 */
+    }
+    .wrapper {
+        padding: 0;
+    }
 }
 </style>

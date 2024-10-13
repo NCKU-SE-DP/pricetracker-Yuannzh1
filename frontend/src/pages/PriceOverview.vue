@@ -75,4 +75,16 @@ export default {
     font-weight: normal;
     margin-top: .5em;
 }
+@media (max-width: 768px) {
+    .wrapper{
+        padding: 0 0;
+    }
+    h1{
+        text-align: center;
+    }
+    h3{
+        text-align: center;
+    }
+
+}
 </style>
