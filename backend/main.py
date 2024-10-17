@@ -189,7 +189,7 @@ def get_new(is_initial=False):
     :param is_initial:
     :return:
     """
-    news_data = get_new_info("價格", is_initial=is_initial)
+    news_data = fetch_news_info_by_search_term("價格", is_initial=is_initial)
     for news in news_data:
         title = news["title"]
         m = [
@@ -420,7 +420,7 @@ async def search_news(request: PromptRequest):
     )
     keywords = completion.choices[0].message.content
     # should change into simple factory pattern
-    news_items = get_new_info(keywords, is_initial=False)
+    news_items = fetch_news_info_by_search_term(keywords, is_initial=False)
     for news in news_items:
         try:
             response = requests.get(news["titleLink"])
