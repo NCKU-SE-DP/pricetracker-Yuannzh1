@@ -146,7 +146,7 @@ def add_new(news_data):
     session.close()
 
 
-def get_new_info(search_term, is_initial=False):
+def fetch_news_info_by_search_term(search_term, is_initial=False):
     """
     get new
 
