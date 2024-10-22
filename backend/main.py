@@ -157,7 +157,7 @@ def fetch_news_info_by_search_term(search_term, is_initial=False):
     all_news_data = []
     # iterate pages to get more news data, not actually get all news data
     if is_initial:
-        a = []
+        aggregated_news_data = []
         for p in range(1, 10):
             p2 = {
                 "page": p,
@@ -166,9 +166,9 @@ def fetch_news_info_by_search_term(search_term, is_initial=False):
                 "type": "searchword",
             }
             response = requests.get("https://udn.com/api/more", params=p2)
-            a.append(response.json()["lists"])
+            aggregated_news_data.append(response.json()["lists"])
 
-        for l in a:
+        for l in aggregated_news_data:
             all_news_data.append(l)
     else:
         p = {
