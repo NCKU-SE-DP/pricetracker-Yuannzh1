@@ -158,9 +158,9 @@ def fetch_news_info_by_search_term(search_term, is_initial=False):
     # iterate pages to get more news data, not actually get all news data
     if is_initial:
         aggregated_news_data = []
-        for p in range(1, 10):
+        for page_number in range(1, 10):
             p2 = {
-                "page": p,
+                "page": page_number,
                 "id": f"search:{quote(search_term)}",
                 "channelId": 2,
                 "type": "searchword",
