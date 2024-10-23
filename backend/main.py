@@ -277,10 +277,10 @@ def verify(p1, p2):
 
 
 def check_user_password_is_correct(db, n, pwd):
-    OuO = db.query(User).filter(User.username == n).first()
-    if not verify(pwd, OuO.hashed_password):
+    user = db.query(User).filter(User.username == n).first()
+    if not verify(pwd, user.hashed_password):
         return False
-    return OuO
+    return user
 
 
 def authenticate_user_token(
