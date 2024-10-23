@@ -272,13 +272,13 @@ def session_opener():
 
 
 
-def verify(p1, p2):
+def verify_hashed_password(p1, p2):
     return pwd_context.verify(p1, p2)
 
 
 def check_user_password_is_correct(db, n, pwd):
     user = db.query(User).filter(User.username == n).first()
-    if not verify(pwd, user.hashed_password):
+    if not verify_hashed_password(pwd, user.hashed_password):
         return False
     return user
 
