@@ -445,8 +445,8 @@ async def search_news(request: PromptRequest):
             detailed_news["content"] = " ".join(detailed_news["content"])
             detailed_news["id"] = next(id_counter)
             news_list.append(detailed_news)
-        except Exception as e:
-            print(e)
+        except Exception as error_message:
+            print(error_message)
     return sorted(news_list, key=lambda x: x["time"], reverse=True)
 
 class NewsSumaryRequestSchema(BaseModel):
