@@ -483,11 +483,11 @@ def upvote_article(
         db=Depends(session_opener),
         u=Depends(authenticate_user_token),
 ):
-    message = toggle_upvote(id, u.id, db)
+    message = toggle_news_upvoted_status(id, u.id, db)
     return {"message": message}
 
 
-def toggle_upvote(n_id, u_id, db):
+def toggle_news_upvoted_status(n_id, u_id, db):
     existing_upvote = db.execute(
         select(user_news_association_table).where(
             user_news_association_table.c.news_articles_id == n_id,
