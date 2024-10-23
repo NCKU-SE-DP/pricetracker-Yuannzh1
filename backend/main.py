@@ -512,7 +512,7 @@ def toggle_news_upvoted_status(n_id, u_id, db):
         return "Article upvoted"
 
 
-def news_exists(id2, db: Session):
+def get_news_exists_status(id2, db: Session):
     return db.query(NewsArticle).filter_by(id=id2).first() is not None
 
 
