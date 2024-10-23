@@ -338,7 +338,7 @@ id_counter = itertools.count(start=1000000)
 
 
 def get_article_upvote_details(article_id, uid, db):
-    cnt = (
+    count = (
         db.query(user_news_association_table)
         .filter_by(news_articles_id=article_id)
         .count()
@@ -351,7 +351,7 @@ def get_article_upvote_details(article_id, uid, db):
                 .first()
                 is not None
         )
-    return cnt, voted
+    return count, voted
 
 
 @app.get("/api/v1/news/news")
