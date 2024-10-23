@@ -375,7 +375,7 @@ def get_all_news_from_database(db=Depends(session_opener)):
 @app.get(
     "/api/v1/news/user_news"
 )
-def read_user_news(
+def get_user_upvoted_news(
         db=Depends(session_opener),
         u=Depends(authenticate_user_token)
 ):
