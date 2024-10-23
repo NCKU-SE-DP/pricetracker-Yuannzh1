@@ -512,8 +512,8 @@ def toggle_news_upvoted_status(n_id, u_id, db):
         return "Article upvoted"
 
 
-def get_news_exists_status(id2, db: Session):
-    return db.query(NewsArticle).filter_by(id=id2).first() is not None
+def get_news_exists_status(news_id, db: Session):
+    return db.query(NewsArticle).filter_by(id=news_id).first() is not None
 
 
 @app.get("/api/v1/prices/necessities-price")
