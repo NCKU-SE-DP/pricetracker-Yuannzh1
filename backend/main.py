@@ -355,7 +355,7 @@ def get_article_upvote_details(article_id, uid, db):
 
 
 @app.get("/api/v1/news/news")
-def read_news(db=Depends(session_opener)):
+def get_all_news_from_database(db=Depends(session_opener)):
     """
     read new
 
