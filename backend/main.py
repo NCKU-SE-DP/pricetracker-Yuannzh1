@@ -192,7 +192,7 @@ def get_news_article(is_initial=False):
     news_data = fetch_news_info_by_search_term("價格", is_initial=is_initial)
     for news in news_data:
         title = news["title"]
-        m = [
+        messages_content = [
             {
                 "role": "system",
                 "content": "你是一個關聯度評估機器人，請評估新聞標題是否與「民生用品的價格變化」相關，並給予'high'、'medium'、'low'評價。(僅需回答'high'、'medium'、'low'三個詞之一)",
@@ -201,7 +201,7 @@ def get_news_article(is_initial=False):
         ]
         ai = OpenAI(api_key="xxx").chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=m,
+            messages=messages_content,
         )
         relevance = ai.choices[0].message.content
         if relevance == "high":
