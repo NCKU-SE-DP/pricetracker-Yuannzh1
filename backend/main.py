@@ -276,9 +276,9 @@ def verify_hashed_password(p1, p2):
     return pwd_context.verify(p1, p2)
 
 
-def check_user_password_is_correct(db, username, pwd):
+def check_user_password_is_correct(db, username, password):
     user = db.query(User).filter(User.username == username).first()
-    if not verify_hashed_password(pwd, user.hashed_password):
+    if not verify_hashed_password(password, user.hashed_password):
         return False
     return user
 
