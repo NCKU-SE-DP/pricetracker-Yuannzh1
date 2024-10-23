@@ -334,7 +334,7 @@ def read_users_me(user=Depends(authenticate_user_token)):
     return {"username": user.username}
 
 
-_id_counter = itertools.count(start=1000000)
+id_counter = itertools.count(start=1000000)
 
 
 def get_article_upvote_details(article_id, uid, db):
@@ -443,7 +443,7 @@ async def search_news(request: PromptRequest):
                 "content": paragraphs,
             }
             detailed_news["content"] = " ".join(detailed_news["content"])
-            detailed_news["id"] = next(_id_counter)
+            detailed_news["id"] = next(id_counter)
             news_list.append(detailed_news)
         except Exception as e:
             print(e)
