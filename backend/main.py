@@ -127,7 +127,7 @@ from bs4 import BeautifulSoup
 from sqlalchemy.orm import Session
 
 
-def add_new(news_data):
+def add_news_to_database(news_data):
     """
     add new to db
     :param news_data: news info
@@ -240,7 +240,7 @@ def get_new(is_initial=False):
             result = json.loads(result)
             detailed_news["summary"] = result["影響"]
             detailed_news["reason"] = result["原因"]
-            add_new(detailed_news)
+            add_news_to_database(detailed_news)
 
 
 @app.on_event("startup")
