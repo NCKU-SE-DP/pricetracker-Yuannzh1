@@ -453,7 +453,7 @@ class NewsSumaryRequestSchema(BaseModel):
     content: str
 
 @app.post("/api/v1/news/news_summary")
-async def news_summary(
+async def get_news_summary(
         payload: NewsSumaryRequestSchema, u=Depends(authenticate_user_token)
 ):
     response = {}
