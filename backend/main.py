@@ -224,7 +224,7 @@ def get_news_article(is_initial=False):
                 "time": time,
                 "content": paragraphs,
             }
-            m = [
+            messages_content = [
                 {
                     "role": "system",
                     "content": "你是一個新聞摘要生成機器人，請統整新聞中提及的影響及主要原因 (影響、原因各50個字，請以json格式回答 {'影響': '...', '原因': '...'})",
@@ -234,7 +234,7 @@ def get_news_article(is_initial=False):
 
             completion = OpenAI(api_key="xxx").chat.completions.create(
                 model="gpt-3.5-turbo",
-                messages=m,
+                messages=messages_content,
             )
             result = completion.choices[0].message.content
             result = json.loads(result)
