@@ -182,7 +182,7 @@ def fetch_news_info_by_search_term(search_term, is_initial=False):
         all_news_data = response.json()["lists"]
     return all_news_data
 
-def get_new(is_initial=False):
+def get_news_article(is_initial=False):
     """
     get new info
 
@@ -248,9 +248,9 @@ def start_scheduler():
     db = SessionLocal()
     if db.query(NewsArticle).count() == 0:
         # should change into simple factory pattern
-        get_new()
+        get_news_article()
     db.close()
-    bgs.add_job(get_new, "interval", minutes=100)
+    bgs.add_job(get_news_article, "interval", minutes=100)
     bgs.start()
 
 
