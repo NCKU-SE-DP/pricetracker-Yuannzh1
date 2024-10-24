@@ -20,10 +20,11 @@ Base.metadata.create_all(bind=engine)
 
 def override_session_opener():
     try:
-        db = TestingSessionLocal()
-        yield db
+        # 將變數 db 改為 database_session，更具描述性
+        database_session = TestingSessionLocal()
+        yield database_session
     finally:
-        db.close()
+        database_session.close()
 
 
 app.dependency_overrides[session_opener] = override_session_opener
@@ -31,20 +32,22 @@ app.dependency_overrides[session_opener] = override_session_opener
 client = TestClient(app)
 
 @pytest.fixture(scope="module")
-def clear_users():
-    with next(override_session_opener()) as db:
-        db.query(User).delete()
-        db.commit()
+def clear_users_before_tests():
+    # 將變數 db 改為 database_session，更具描述性
+    with next(override_session_opener()) as database_session:
+        database_session.query(User).delete()
+        database_session.commit()
 
 @pytest.fixture(scope="module")
-def test_user(clear_users):
+def test_user(clear_users_before_tests):
     hashed_password = pwd_context.hash("testpassword")
 
-    with next(override_session_opener()) as db:
+    # 將變數 db 改為 database_session，更具描述性
+    with next(override_session_opener()) as database_session:
         user = User(username="testuser", hashed_password=hashed_password)
-        db.add(user)
-        db.commit()
-        db.refresh(user)
+        database_session.add(user)
+        database_session.commit()
+        database_session.refresh(user)
         return user
 
 
