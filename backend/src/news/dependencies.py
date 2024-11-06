@@ -32,12 +32,11 @@ def add_news_to_database(news_data):
 
 def fetch_news_info_by_search_term(search_term, is_initial=False):
     """
-    get new
-
-
-    :param search_term:
-    :param is_initial:
-    :return:
+    根據指定的搜尋詞來獲取新聞資訊
+    
+    :param search_term: 用於搜尋的關鍵字
+    :param is_initial: 布林值，若為 True 則會抓取多頁新聞數據
+    :return: 包含新聞資訊的列表
     """
     all_news_data = []
     # iterate pages to get more news data, not actually get all news data
@@ -122,11 +121,10 @@ def toggle_news_upvoted_status(n_id, u_id, db):
     
 def get_news_article(is_initial=False):
     """
-    get new info
-
-
-    :param is_initial:
-    :return:
+    獲取並處理與民生用品價格變化相關的新聞資訊
+    
+    :param is_initial: 布林值，若為 True 則會嘗試抓取多頁數據
+    :return: None
     """
     news_data = fetch_news_info_by_search_term("價格", is_initial=is_initial)
     for news in news_data:
