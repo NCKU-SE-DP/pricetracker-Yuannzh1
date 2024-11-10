@@ -11,7 +11,7 @@ on:
 
 jobs:
   test:
-    runs-on: F74114778
+    runs-on: F74136877
 
     steps:
       - name: Checkout code
