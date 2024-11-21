@@ -4,13 +4,14 @@ on:
   push:
     branches:
       - 'main'
+      - 'fix/integration-test'
   pull_request:
     branches:
       - 'main'
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: F74136877
 
     steps:
       - name: Checkout code

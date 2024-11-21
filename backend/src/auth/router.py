@@ -5,9 +5,10 @@ from src.auth.dependencies import authenticate_user, create_access_token, sessio
 from src.auth.schemas import UserAuthSchema, Token
 from datetime import timedelta
 
-router = APIRouter(prefix="/api/v1/auth")
+router = APIRouter()
 
-@router.post("/register")
+@router.post("/api/v1/auth/register")
+
 def register_user(user: UserAuthSchema, db: Session = Depends(session_opener)):
     hashed_password = pwd_context.hash(user.password)
     db_user = User(username=user.username, hashed_password=hashed_password)
@@ -16,7 +17,11 @@ def register_user(user: UserAuthSchema, db: Session = Depends(session_opener)):
     db.refresh(db_user)
     return db_user
 
-@router.post("/login", response_model=Token)
+
+
+
+@router.post("/api/v1/auth/login", response_model=Token)
+
 def login(user: UserAuthSchema, db: Session = Depends(session_opener)):
     db_user = authenticate_user(db, user.username, user.password)
     if not db_user:

@@ -17,9 +17,10 @@ from src.news.models import NewsArticle
 from src.news.utils import _id_counter
 
 
-router = APIRouter(prefix="/api/v1/news")
 
-@router.get("/news", response_model=List[NewsResponse])
+router = APIRouter()
+@router.get("/api/v1/news/news", response_model=List[NewsResponse])
+
 def get_all_news_from_database(db: Session = Depends(session_opener)):
     """
     從資料庫中獲取所有新聞，並包含點讚數和是否已被點讚的狀態。
@@ -36,7 +37,9 @@ def get_all_news_from_database(db: Session = Depends(session_opener)):
         )
     return result
 
-@router.get("/user_news")
+
+@router.get("/api/v1/news/user_news")
+
 def get_user_upvoted_news(db= Depends(session_opener), user=Depends(authenticate_user_token)):
     """
     獲取用戶點讚過的新聞，並包含每篇新聞的點讚數和該用戶是否已點讚的狀態。
@@ -58,7 +61,8 @@ def get_user_upvoted_news(db= Depends(session_opener), user=Depends(authenticate
         )
     return result
 
-@router.post("/search_news")
+
+@router.post("/api/v1/news/search_news")
 async def search_news(request: PromptRequest):
     """
     使用 OpenAI 來提取關鍵字並根據關鍵字搜尋新聞內容。
@@ -122,7 +126,7 @@ async def search_news(request: PromptRequest):
     # 按時間排序並返回結果
     return sorted(news_list, key=lambda x: x["time"], reverse=True)
 
-@router.post("/news_summary")
+@router.post("/api/v1/news/news_summary")
 async def get_news_summary(payload: NewsSumaryRequestSchema, u=Depends(authenticate_user_token)):
     """
     使用 OpenAI 生成新聞摘要，提取影響和原因。
@@ -152,7 +156,8 @@ async def get_news_summary(payload: NewsSumaryRequestSchema, u=Depends(authentic
 
     return response
 
-@router.post("/{id}/upvote")
+
+@router.post("/api/v1/news/{id}/upvote")
 def upvote_article(id, db= Depends(session_opener), u=Depends(authenticate_user_token)):
     """
     切換指定新聞的點讚狀態
