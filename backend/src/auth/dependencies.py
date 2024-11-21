@@ -6,7 +6,7 @@ from src.auth.models import User
 from src.database import session_opener
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
- 
+
 SECRET_KEY = "1892dhianiandowqd0n"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 15
