@@ -2,14 +2,14 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, StaticPool
 from sqlalchemy.orm import sessionmaker
-from main import app
-from main import Base, User, session_opener
+from src.main import app
+from src.database import Base, session_opener
+from src.auth.models import User 
 from jose import jwt
-from main import pwd_context
+from src.auth.dependencies import pwd_context
 
 SECRET_KEY = "1892dhianiandowqd0n"
 ALGORITHM = "HS256"
-# SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}, poolclass=StaticPool)
 
@@ -20,11 +20,10 @@ Base.metadata.create_all(bind=engine)
 
 def override_session_opener():
     try:
-        # 將變數 db 改為 database_session，更具描述性
-        database_session = TestingSessionLocal()
-        yield database_session
+        db = TestingSessionLocal()
+        yield db
     finally:
-        database_session.close()
+        db.close()
 
 
 app.dependency_overrides[session_opener] = override_session_opener
@@ -33,21 +32,19 @@ client = TestClient(app)
 
 @pytest.fixture(scope="module")
 def clear_users_before_tests():
-    # 將變數 db 改為 database_session，更具描述性
-    with next(override_session_opener()) as database_session:
-        database_session.query(User).delete()
-        database_session.commit()
+    with next(override_session_opener()) as db:
+        db.query(User).delete()
+        db.commit()
 
 @pytest.fixture(scope="module")
 def test_user(clear_users_before_tests):
     hashed_password = pwd_context.hash("testpassword")
 
-    # 將變數 db 改為 database_session，更具描述性
-    with next(override_session_opener()) as database_session:
+    with next(override_session_opener()) as db:
         user = User(username="testuser", hashed_password=hashed_password)
-        database_session.add(user)
-        database_session.commit()
-        database_session.refresh(user)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
         return user
 
 
