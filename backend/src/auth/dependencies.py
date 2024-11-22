@@ -6,7 +6,7 @@ from src.auth.models import User
 from src.database import session_opener
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
-
+ 
 SECRET_KEY = "1892dhianiandowqd0n"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 15
@@ -15,6 +15,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/users/login")
 
 def verify_hashed_password(p1, p2):
     return pwd_context.verify(p1, p2)
+
 
 def check_user_password_is_correct(db, username, password):
     user = db.query(User).filter(User.username == username).first()
