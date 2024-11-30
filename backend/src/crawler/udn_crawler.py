@@ -68,7 +68,7 @@ class UDNCrawler(NewsCrawlerBase):
         # If 'page' is an int, create a list containing only that single page number.
         # page_range = range(*page) if isinstance(page, tuple) else [page]
         page_range = (
-            range(page[0], page[1] + 1) if isinstance(page, tuple) else [page]
+            range(*page) if isinstance(page, tuple) else [page]
         )
         headlines = []
         for p in page_range:
