@@ -15,6 +15,7 @@ def read_users_me(user=Depends(authenticate_user_token)):
     return {"id": user.id, "username": user.username}
 
 @router.post("/api/v1/users/register")
+
 def register_user(user: UserAuthSchema, db: Session = Depends(session_opener)):
     hashed_password = pwd_context.hash(user.password)
     db_user = User(username=user.username, hashed_password=hashed_password)
@@ -23,7 +24,9 @@ def register_user(user: UserAuthSchema, db: Session = Depends(session_opener)):
     db.refresh(db_user)
     return db_user
 
+
 @router.post("/api/v1/users/login")
+
 async def login_for_access_token(
         form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(session_opener)
 ):

@@ -4,6 +4,7 @@ from sqlalchemy import delete, insert, select
 from sqlalchemy.orm import Session
 from src.database import session_opener, SessionLocal
 from src.news.models import NewsArticle, user_news_association_table
+
 import requests
 from urllib.parse import quote
 from fastapi import Depends

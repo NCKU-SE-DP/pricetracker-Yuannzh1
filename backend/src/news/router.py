@@ -17,9 +17,11 @@ from src.news.models import NewsArticle
 from src.news.utils import _id_counter
 
 
+
 router = APIRouter()
 
 @router.get("/api/v1/news/news")
+
 def get_all_news_from_database(db: Session = Depends(session_opener)):
     """
     從資料庫中獲取所有新聞，並包含點讚數和是否已被點讚的狀態。
@@ -36,7 +38,9 @@ def get_all_news_from_database(db: Session = Depends(session_opener)):
         )
     return result
 
+
 @router.get("/api/v1/news/user_news")
+
 def get_user_upvoted_news(db= Depends(session_opener), user=Depends(authenticate_user_token)):
     """
     獲取用戶點讚過的新聞，並包含每篇新聞的點讚數和該用戶是否已點讚的狀態。
@@ -57,6 +61,7 @@ def get_user_upvoted_news(db= Depends(session_opener), user=Depends(authenticate
             }
         )
     return result
+
 
 @router.post("/api/v1/news/search_news")
 async def search_news(request: PromptRequest):
