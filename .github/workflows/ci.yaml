@@ -7,6 +7,7 @@ on:
       - 'refactor/crawler-oop-implementation'
       - 'fix/integration-test'
 
+
   pull_request:
     branches:
       - 'main'
