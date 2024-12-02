@@ -10,6 +10,7 @@ from urllib.parse import quote
 from fastapi import Depends
 from openai import OpenAI
 from src.crawler.udn_crawler import UDNCrawler
+from src.llm_client.openai_client import OpenAIClient
 
 crawler = UDNCrawler()
 
@@ -95,48 +96,40 @@ def toggle_news_upvoted_status(n_id, u_id, db):
         db.commit()
         return "Article upvoted"
     
-def get_news_article(is_initial=False):
+def get_news_article(llm_client: OpenAIClient, crawler: UDNCrawler, is_initial: bool = False):
     """
-    獲取並處理與民生用品價格變化相關的新聞資訊
-    
-    :param is_initial: 布林值，若為 True 則會嘗試抓取多頁數據
+    獲取並處理與民生用品價格變化相關的新聞資訊。
+
+    :param llm_client: LLM 客戶端實例，用於與 OpenAI 交互。
+    :param crawler: 爬蟲實例，用於抓取新聞內容。
+    :param is_initial: 是否抓取多頁數據（默認為 False）。
     :return: None
     """
+    # 抓取新聞資料
     news_data = fetch_news_info_by_search_term("價格", is_initial=is_initial)
+
     for news in news_data:
         title = news["title"]
-        messages_content = [
-            {
-                "role": "system",
-                "content": "你是一個關聯度評估機器人，請評估新聞標題是否與「民生用品的價格變化」相關，並給予'high'、'medium'、'low'評價。(僅需回答'high'、'medium'、'low'三個詞之一)",
-            },
-            {"role": "user", "content": f"{title}"},
-        ]
-        ai = OpenAI(api_key="xxx").chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=messages_content,
-        )
-        relevance = ai.choices[0].message.content
-        if relevance == "high":
-            detailed_news = crawler.parse(news["titleLink"])
-            messages_content = [
-                {
-                    "role": "system",
-                    "content": "你是一個新聞摘要生成機器人，請統整新聞中提及的影響及主要原因 (影響、原因各50個字，請以json格式回答 {'影響': '...', '原因': '...'})",
-                },
-                {"role": "user", "content": " ".join(detailed_news["content"])},
-            ]
 
+        # 1. 使用 LLM 判斷新聞與主題的關聯度
+        relevance = llm_client.evaluate_relevance(title, "民生用品的價格變化")
+        if relevance != "high":
+            continue  # 跳過不相關的新聞
 
-            completion = OpenAI(api_key="xxx").chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=messages_content,
-            )
-            result = completion.choices[0].message.content
-            result = json.loads(result)
-            detailed_news["summary"] = result["影響"]
-            detailed_news["reason"] = result["原因"]
-            add_news_to_database(detailed_news)
+        # 2. 抓取並解析詳細新聞內容
+        detailed_news = crawler.parse(news["titleLink"])
+
+        # 3. 使用 LLM 生成新聞摘要
+        summary_data = llm_client.generate_summary(" ".join(detailed_news["content"]))
+        if not summary_data:
+            print(f"Failed to generate summary for news: {title}")
+            continue
+
+        # 4. 更新新聞詳細內容並存入資料庫
+        detailed_news["summary"] = summary_data.get("影響", "")
+        detailed_news["reason"] = summary_data.get("原因", "")
+        add_news_to_database(detailed_news)
+
 
 def get_news_exists_status(news_id: int, db: Session) -> bool:
     """
