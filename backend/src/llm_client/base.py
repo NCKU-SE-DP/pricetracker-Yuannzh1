@@ -34,12 +34,4 @@ class LLMClientBase(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
-    @staticmethod
-    @abc.abstractmethod
-    def validate_message(message: Message) -> bool:
-        """
-        Validates whether a message conforms to the expected format.
-        :param message: A single message to validate.
-        :return: True if the message is valid, False otherwise.
-        """
-        raise NotImplementedError
+
