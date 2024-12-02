@@ -11,7 +11,7 @@ from fastapi import Depends
 from openai import OpenAI
 from src.crawler.udn_crawler import UDNCrawler
 
-crawler = UDNCrawler
+crawler = UDNCrawler()
 
 def add_news_to_database(news_data):
     """
@@ -36,18 +36,11 @@ def fetch_news_info_by_search_term(search_term, is_initial=False):
     all_news_data = []
     # iterate pages to get more news data, not actually get all news data
     if is_initial:
-        crawler = UDNCrawler()
         all_news_data = crawler.get_headline(search_term,(1,10))
     else:
-        params = {
-            "page": 1,
-            "id": f"search:{quote(search_term)}",
-            "channelId": 2,
-            "type": "searchword",
-        }
-        response = requests.get("https://udn.com/api/more", params=params)
-
-
+        # 使用 _create_search_params 方法生成参数
+        params = crawler._create_search_params(page=1, search_term=search_term)
+        response = crawler._perform_request(params=params)
         all_news_data = response.json()["lists"]
     return all_news_data
 
