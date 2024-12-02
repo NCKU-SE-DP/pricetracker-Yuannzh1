@@ -16,7 +16,7 @@ from src.news.dependencies import (
 from src.news.models import NewsArticle
 from src.news.utils import _id_counter
 from src.llm_client.openai_client import OpenAIClient
-
+from src.news.utils import get_openai_client
 
 router = APIRouter()
 
@@ -64,7 +64,7 @@ def get_user_upvoted_news(db= Depends(session_opener), user=Depends(authenticate
 
 
 @router.post("/api/v1/news/search_news")
-async def search_news(request: PromptRequest, llm_client: OpenAIClient):
+async def search_news(request: PromptRequest, llm_client: OpenAIClient = Depends(get_openai_client)):
     """
     使用 OpenAI 來提取關鍵字並根據關鍵字搜尋新聞內容。
 
@@ -121,7 +121,7 @@ async def search_news(request: PromptRequest, llm_client: OpenAIClient):
 @router.post("/api/v1/news/news_summary")
 async def get_news_summary(
     payload: NewsSumaryRequestSchema,
-    llm_client: OpenAIClient,
+    llm_client: OpenAIClient = Depends(get_openai_client),
     u=Depends(authenticate_user_token)
 ):
     """
@@ -132,19 +132,20 @@ async def get_news_summary(
     :param u: 已驗證的使用者
     :return: 包含摘要和原因的回應
     """
-    try:
+    response = {}
+    #try:
         # 使用 llm_client 提取新聞摘要
-        summary_data = llm_client.generate_summary(payload.content)
-        if not summary_data:
-            return {"error": "Failed to generate news summary. Please try again."}
+    summary_data = llm_client.generate_summary(payload.content)
+    if summary_data:
+        response["summary"] = summary_data["影響"]
+        response["reason"] = summary_data["原因"]
 
-        return {
-            "summary": summary_data.get("影響", ""),
-            "reason": summary_data.get("原因", ""),
-        }
-    except Exception as e:
-        print(f"Error generating news summary: {e}")
-        return {"error": "An error occurred while generating the news summary."}
+    return response
+        
+    
+    #except Exception as e:
+    #    print(f"Error generating news summary: {e}")
+    #    return {"error": "An error occurred while generating the news summary."}
 
 @router.post("/api/v1/news/{id}/upvote")
 def upvote_article(id, db= Depends(session_opener), u=Depends(authenticate_user_token)):
