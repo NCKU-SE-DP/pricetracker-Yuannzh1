@@ -12,6 +12,7 @@ on:
   pull_request:
     branches:
       - 'main'
+      - 'develop'
 
 jobs:
   test:
@@ -51,7 +52,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           cd backend
-          pytest tests/crawler --cov=src --cov-report=xml --disable-warnings
+          pytest tests/unit --cov=src --cov-report=xml --disable-warnings
           
       - name: Run backend llm_client module integration tests
         env:
