@@ -76,7 +76,7 @@ async def search_news(request: PromptRequest, llm_client: OpenAIClient = Depends
     news_list = []
 
     # 使用 llm_client 提取關鍵字
-    keywords = llm_client.extract_search_keywords(prompt)
+    keywords = llm_client.extract_keywords(prompt).strip()
     if not keywords:
         return {"error": "Failed to extract keywords. Please try again."}
 
@@ -85,12 +85,11 @@ async def search_news(request: PromptRequest, llm_client: OpenAIClient = Depends
     for news in news_items:
         try:
             response = requests.get(news["titleLink"])
-            response.raise_for_status()  # 檢查請求是否成功
             soup = BeautifulSoup(response.text, "html.parser")
 
             # 抓取並解析新聞的標題和時間
-            title = soup.find("h1", class_="article-content__title").text.strip()
-            time = soup.find("time", class_="article-content__time").text.strip()
+            title = soup.find("h1", class_="article-content__title").text
+            time = soup.find("time", class_="article-content__time").text
 
             # 抓取新聞內容部分
             content_section = soup.find("section", class_="article-content__editor")

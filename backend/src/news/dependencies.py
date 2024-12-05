@@ -106,29 +106,25 @@ def get_news_article(llm_client: OpenAIClient, crawler: UDNCrawler, is_initial: 
     :return: None
     """
     # 抓取新聞資料
-    news_data = fetch_news_info_by_search_term("價格", is_initial=is_initial)
+    news_data = fetch_news_info_by_search_term("價格", is_initial=is_initial) #list
 
     for news in news_data:
         title = news["title"]
 
         # 1. 使用 LLM 判斷新聞與主題的關聯度
         relevance = llm_client.evaluate_relevance(title, "民生用品的價格變化")
-        if relevance != "high":
-            continue  # 跳過不相關的新聞
+        if relevance == "high":
+            # 2. 抓取並解析詳細新聞內容
+            detailed_news = crawler.parse(news["titleLink"]) #News
 
-        # 2. 抓取並解析詳細新聞內容
-        detailed_news = crawler.parse(news["titleLink"])
+            # 3. 使用 LLM 生成新聞摘要
+            summary_data = llm_client.generate_summary(" ".join(detailed_news["content"]))
+        
 
-        # 3. 使用 LLM 生成新聞摘要
-        summary_data = llm_client.generate_summary(" ".join(detailed_news["content"]))
-        if not summary_data:
-            print(f"Failed to generate summary for news: {title}")
-            continue
-
-        # 4. 更新新聞詳細內容並存入資料庫
-        detailed_news["summary"] = summary_data.get("影響", "")
-        detailed_news["reason"] = summary_data.get("原因", "")
-        add_news_to_database(detailed_news)
+            # 4. 更新新聞詳細內容並存入資料庫
+            detailed_news["summary"] = summary_data.get("影響", "")
+            detailed_news["reason"] = summary_data.get("原因", "")
+            add_news_to_database(detailed_news)
 
 
 def get_news_exists_status(news_id: int, db: Session) -> bool:

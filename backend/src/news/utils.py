@@ -8,4 +8,4 @@ def get_openai_client() -> OpenAIClient:
     """
     提供 OpenAIClient 實例的工廠函數
     """
-    return OpenAIClient(api_key="xxx")
+    return OpenAIClient(_api_key="xxx")
