@@ -13,4 +13,4 @@ def session_opener():
     try:
         yield db
     finally:
-        db.close()
+        db.close() 
