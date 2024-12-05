@@ -9,6 +9,9 @@ import requests
 from urllib.parse import quote
 from fastapi import Depends
 from openai import OpenAI
+from src.crawler.udn_crawler import UDNCrawler
+
+crawler = UDNCrawler
 
 def add_news_to_database(news_data):
     """
@@ -17,16 +20,7 @@ def add_news_to_database(news_data):
     :return:
     """
     session = Session() 
-    session.add(NewsArticle(
-        url=news_data["url"],
-        title=news_data["title"],
-        time=news_data["time"],
-        content=" ".join(news_data["content"]),  # 將內容list轉換為字串
-        summary=news_data["summary"],
-        reason=news_data["reason"],
-    ))
-    session.commit()
-    session.close()
+    crawler.save(news_data,session)
 
 #def get_news_article_by_id(article_id: int, db: Session = Depends(session_opener)):
 #  return db.query(NewsArticle).filter(NewsArticle.id == article_id).first()
@@ -42,20 +36,8 @@ def fetch_news_info_by_search_term(search_term, is_initial=False):
     all_news_data = []
     # iterate pages to get more news data, not actually get all news data
     if is_initial:
-        aggregated_news_data = []
-        for page_number in range(1, 10):
-            request_params = {
-                "page": page_number,
-                "id": f"search:{quote(search_term)}",
-                "channelId": 2,
-                "type": "searchword",
-            }
-            response = requests.get("https://udn.com/api/more", params=request_params)
-            aggregated_news_data.append(response.json()["lists"])
-
-
-        for news_data in aggregated_news_data:
-            all_news_data.append(news_data)
+        crawler = UDNCrawler()
+        all_news_data = crawler.get_headline(search_term,(1,10))
     else:
         params = {
             "page": 1,
@@ -143,26 +125,7 @@ def get_news_article(is_initial=False):
         )
         relevance = ai.choices[0].message.content
         if relevance == "high":
-            response = requests.get(news["titleLink"])
-            soup = BeautifulSoup(response.text, "html.parser")
-            # 標題
-            title = soup.find("h1", class_="article-content__title").text
-            time = soup.find("time", class_="article-content__time").text
-            # 定位到包含文章内容的 <section>
-            content_section = soup.find("section", class_="article-content__editor")
-
-
-            paragraphs = [
-                p.text
-                for p in content_section.find_all("p")
-                if p.text.strip() != "" and "▪" not in p.text
-            ]
-            detailed_news =  {
-                "url": news["titleLink"],
-                "title": title,
-                "time": time,
-                "content": paragraphs,
-            }
+            detailed_news = crawler.parse(news["titleLink"])
             messages_content = [
                 {
                     "role": "system",

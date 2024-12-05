@@ -8,7 +8,6 @@ from src.auth.models import User
 from src.auth.dependencies import authenticate_user, create_access_token, session_opener, pwd_context
 from src.auth.schemas import UserAuthSchema, Token
 
-
 router = APIRouter()
 
 @router.get("/api/v1/users/me", response_model=UserProfile)

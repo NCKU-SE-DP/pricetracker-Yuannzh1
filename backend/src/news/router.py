@@ -19,7 +19,8 @@ from src.news.utils import _id_counter
 
 
 router = APIRouter()
-@router.get("/api/v1/news/news", response_model=List[NewsResponse])
+
+@router.get("/api/v1/news/news")
 
 def get_all_news_from_database(db: Session = Depends(session_opener)):
     """
@@ -155,7 +156,6 @@ async def get_news_summary(payload: NewsSumaryRequestSchema, u=Depends(authentic
         response["reason"] = result.get("原因", "")
 
     return response
-
 
 @router.post("/api/v1/news/{id}/upvote")
 def upvote_article(id, db= Depends(session_opener), u=Depends(authenticate_user_token)):

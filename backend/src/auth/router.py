@@ -17,9 +17,6 @@ def register_user(user: UserAuthSchema, db: Session = Depends(session_opener)):
     db.refresh(db_user)
     return db_user
 
-
-
-
 @router.post("/api/v1/auth/login", response_model=Token)
 
 def login(user: UserAuthSchema, db: Session = Depends(session_opener)):
