@@ -140,11 +140,13 @@ async def get_news_summary(
         response["reason"] = summary_data["原因"]
 
     return response
+
         
     
     #except Exception as e:
     #    print(f"Error generating news summary: {e}")
     #    return {"error": "An error occurred while generating the news summary."}
+
 
 @router.post("/api/v1/news/{id}/upvote")
 def upvote_article(id, db= Depends(session_opener), u=Depends(authenticate_user_token)):
