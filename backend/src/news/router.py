@@ -183,7 +183,6 @@ def upvote_article(id, db= Depends(session_opener), u=Depends(authenticate_user_
     message = toggle_news_upvoted_status(id, u.id, db)
     return {"message": message}
 
-headers = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJUZXN0IiwiZXhwIjoxNzMzNzU3NzI4fQ.U8PawaychCLxKQ6HUFTR2nxm9ufeHQ7HfR2yL_Yjg9U"
 @router.post("/api/v1/news/news_summary_custom_model")
 async def get_news_summary_custom_model(
     payload: NewsSumaryCustomModelSchema,
