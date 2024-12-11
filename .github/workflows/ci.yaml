@@ -7,6 +7,7 @@ on:
       - 'refactor/crawler-oop-implementation'
       - 'fix/integration-test'
       - 'refactor/llm_client'
+      - 'refactor/llm-client-template-methods-pattern'
 
 
   pull_request:
