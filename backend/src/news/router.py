@@ -141,6 +141,7 @@ async def search_news(request: PromptRequest):
 @router.post("/api/v1/news/news_summary")
 async def get_news_summary(
     payload: NewsSumaryRequestSchema,
+    user_authentic=Depends(authenticate_user_token)
 ):
     """
     使用 OpenAI 生成新聞摘要，提取影響和原因。
