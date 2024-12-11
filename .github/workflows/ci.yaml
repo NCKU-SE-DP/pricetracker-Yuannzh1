@@ -26,14 +26,14 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.12"
+          python-version: "3.12.7"
 
       - name: Install dependencies
         run: |
-          py3.12 pip install -r requirements.txt
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
           pip install -r backend/requirements.txt
           pip install pytest pytest-mock pytest-cov
-
       # - name: Run unit tests
       #   env:
       #     OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
