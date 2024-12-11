@@ -28,10 +28,12 @@ jobs:
         with:
           python-version: "3.12.7"
 
-      - name: Upgrade pip
+      - name: Upgrade pip and Add PATH
         run: |
           python -m ensurepip --upgrade
           python -m pip install --upgrade pip
+          SCRIPTS_PATH=$(python -c "import sys; from pathlib import Path; print(Path(sys.executable).parent / 'Scripts')")
+          echo "##[add-path]$SCRIPTS_PATH"
 
       - name: Install dependencies
         run: |
