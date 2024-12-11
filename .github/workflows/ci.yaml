@@ -30,7 +30,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          py3.12  pip install -r requitements.tex
+          python3.12 -m pip install -r requirements.txt
           py3.12 pip install -r backend/requirements.txt
           py3.12 pip install pytest pytest-mock pytest-cov
 
