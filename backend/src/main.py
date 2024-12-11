@@ -1,3 +1,4 @@
+
 import sentry_sdk
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
@@ -9,7 +10,11 @@ from src.auth.router import router as auth_router
 from src.users.router import router as users_router
 from src.news.router import router as news_router
 from src.price.router import router as price_router
+from src.news.dependencies import fetch_news_info_by_search_term
 from src.crawler.udn_crawler import UDNCrawler
+from src.llm_client.openai_client import OpenAIClient
+
+
 
 sentry_sdk.init(
     dsn="https://4001ffe917ccb261aa0e0c34026dc343@o4505702629834752.ingest.us.sentry.io/4507694792704000",
@@ -19,16 +24,17 @@ sentry_sdk.init(
 
 app = FastAPI()
 bgs = BackgroundScheduler()
-crawler = UDNCrawler()
 
+llm_client = OpenAIClient()
+crawler = UDNCrawler()
 @app.on_event("startup")
 def start_scheduler():
     db = SessionLocal()
     if db.query(NewsArticle).count() == 0:
         # should change into simple factory pattern
-        crawler.startup("價格")
+        fetch_news_info_by_search_term("價格")
     db.close()
-    bgs.add_job(get_news_article, "interval", minutes=100)
+    bgs.add_job(get_news_article, "interval", minutes=100, kwargs={"llm_client": llm_client, "crawler": crawler})
     bgs.start()
 
 @app.on_event("shutdown")
