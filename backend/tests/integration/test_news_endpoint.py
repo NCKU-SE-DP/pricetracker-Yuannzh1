@@ -35,7 +35,8 @@ client = TestClient(app)
 @pytest.fixture(scope="module")
 def clear_users():
     with next(override_session_opener()) as db:
-        db.query(User).delete()
+        db.query(User).delete()  # 清空 users 表
+        #db.query(NewsArticle).delete()  # 清空 news_articles 表
         db.commit()
 
 @pytest.fixture(scope="module")
@@ -59,6 +60,7 @@ def test_token(test_user):
 @pytest.fixture(scope="module")
 def test_articles():
     with next(override_session_opener()) as db:
+    
         article_1 = NewsArticle(
             url="https://example.com/test-news-1",
             title="Test News 1",
@@ -111,20 +113,11 @@ def test_read_user_news(test_user, test_token, test_articles):
     assert json_response[1]["is_upvoted"] is False
 
 def mock_openai(mocker, return_content):
-    mock_openai_client = mocker.patch('src.news.router.OpenAI')
+    mock_generate = mocker.patch('src.llm_client.openai_client.OpenAIClient._perform_request')
 
-    mock_message = Mock()
-    mock_message.content = return_content
+    mock_generate.return_value = return_content
 
-    mock_choice = Mock()
-    mock_choice.message = mock_message
-
-    mock_completion = Mock()
-    mock_completion.choices = [mock_choice]
-
-    mock_openai_client.return_value.chat.completions.create.return_value = mock_completion
-
-    return mock_openai_client
+    return mock_generate
 
 def test_search_news(mocker):
     mock_openai(mocker, "keywords")
@@ -156,6 +149,8 @@ def test_search_news(mocker):
     assert data[0]["title"] == "Test Title"
     assert data[0]["time"] == "2024-09-10"
     assert data[0]["content"] == "This is a test paragraph."
+
+
 
 
 def test_news_summary(mocker, test_token):

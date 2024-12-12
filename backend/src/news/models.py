@@ -9,6 +9,7 @@ user_news_association_table = Table(
     Column(
         "news_articles_id", Integer, ForeignKey("news_articles.id"), primary_key=True
     ),
+    #extend_existing=True,  # 允許在 MetaData 中重新定義
 )
 
 class NewsArticle(Base):
@@ -25,4 +26,3 @@ class NewsArticle(Base):
     )
 
 Base.metadata.create_all(bind=engine)
-
