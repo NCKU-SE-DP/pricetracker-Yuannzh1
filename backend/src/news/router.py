@@ -163,8 +163,7 @@ async def get_news_summary(
 
 
     return response
-       
-   
+
     #except Exception as e:
     #    print(f"Error generating news summary: {e}")
     #    return {"error": "An error occurred while generating the news summary."}

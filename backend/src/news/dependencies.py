@@ -10,9 +10,11 @@ from urllib.parse import quote
 from fastapi import Depends
 from openai import OpenAI
 from src.crawler.udn_crawler import UDNCrawler
+
 from src.llm_client.openai_client import OpenAIClient
 
 crawler = UDNCrawler()
+
 
 def add_news_to_database(news_data):
     """
@@ -124,6 +126,7 @@ def get_news_article(llm_client: OpenAIClient, crawler: UDNCrawler, is_initial: 
             # 4. 更新新聞詳細內容並存入資料庫
             detailed_news["summary"] = summary_data.get("影響", "")
             detailed_news["reason"] = summary_data.get("原因", "")
+
             add_news_to_database(detailed_news)
 
 
