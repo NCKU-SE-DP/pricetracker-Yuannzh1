@@ -91,7 +91,7 @@ async def search_news(request: PromptRequest):
     # 使用 llm_client 提取關鍵字
     keywords = llm_client.extract_keywords(prompt).strip()
     if not keywords:
-        return {"error": "Failed to extract keywords. Please try again."}
+        return "error: Failed to extract keywords. Please try again."
 
 
     # 使用提取出的關鍵字進行新聞搜索
