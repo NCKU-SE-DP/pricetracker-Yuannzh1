@@ -19,7 +19,8 @@ from src.llm_client.openai_client import OpenAIClient
 from src.llm_client.anthropic_client import AnthropicClient
 from src.llm_client.base import Message, LLMClientTemplate
 
-
+from sentry_sdk import capture_exception
+from src.news.exceptions import ExtractFailure
 router = APIRouter()
 
 
@@ -87,11 +88,19 @@ async def search_news(request: PromptRequest):
     prompt = request.prompt
     news_list = []
     llm_client = OpenAIClient()
-
+    try:
     # 使用 llm_client 提取關鍵字
-    keywords = llm_client.extract_keywords(prompt).strip()
-    if not keywords:
-        return {"error": "Failed to extract keywords. Please try again."}
+        keywords = llm_client.extract_keywords(prompt).strip()
+        if not keywords:
+            raise ExtractFailure()
+    except ExtractFailure as extract_err:
+        # 捕捉特定的評估失敗錯誤並記錄到 Sentry
+        capture_exception(extract_err)
+        return f"error: {extract_err}"
+    except Exception as err:
+        # 捕捉其他異常並記錄到 Sentry
+        capture_exception(err)
+        return "error: An unexpected error occurred. Please try again."
 
 
     # 使用提取出的關鍵字進行新聞搜索
@@ -99,13 +108,15 @@ async def search_news(request: PromptRequest):
     for news in news_items:
         try:
             response = requests.get(news["titleLink"])
+            response.raise_for_status()  # 檢查 HTTP 狀態碼是否為成功
+        except requests.exceptions.RequestException as req_err:
+            capture_exception(req_err)
+            return "error: An requests error occurred. Please try again."
+        try:
             soup = BeautifulSoup(response.text, "html.parser")
-
-
             # 抓取並解析新聞的標題和時間
             title = soup.find("h1", class_="article-content__title").text
             time = soup.find("time", class_="article-content__time").text
-
 
             # 抓取新聞內容部分
             content_section = soup.find("section", class_="article-content__editor")
@@ -114,9 +125,7 @@ async def search_news(request: PromptRequest):
                 for p in content_section.find_all("p")
                 if p.text.strip() and "▪" not in p.text
             ]
-
-
-            # 組合新聞數據
+             # 組合新聞數據
             detailed_news = {
                 "url": news["titleLink"],
                 "title": title,
@@ -124,12 +133,14 @@ async def search_news(request: PromptRequest):
                 "content": " ".join(paragraphs),
             }
 
-
             # 使用唯一的新聞 ID（假設有 `_id_counter` 作為 ID 生成器）
             detailed_news["id"] = next(_id_counter)
             news_list.append(detailed_news)
-        except Exception as error_message:
-            print(f"Error fetching article: {error_message}")
+
+        except AttributeError as parse_err:
+            capture_exception(parse_err)
+            return f"HTML Parsing Error"
+
 
 
     # 按時間排序並返回結果
@@ -154,15 +165,25 @@ async def get_news_summary(
     """
     llm_client = OpenAIClient()
     response = {}
-    #try:
+    try:
         # 使用 llm_client 提取新聞摘要
-    summary_data = llm_client.generate_summary(payload.content)
-    if summary_data:
+        summary_data = llm_client.generate_summary(payload.content)
+        if not summary_data:
+            raise GenerateSummaryFailure()
+        
         response["summary"] = summary_data["影響"]
         response["reason"] = summary_data["原因"]
+        return response
 
+    except ValueError as val_err:
+        # 捕捉數據格式或值相關的問題
+        capture_exception(val_err)
+        return f"error: Invalid input data: {val_err}"
+    except Exception as err:
+        # 捕捉其他未預期的異常
+        capture_exception(err)
+        return "error: An unexpected error occurred while processing your request. Please try again."
 
-    return response
        
    
     #except Exception as e:
@@ -198,26 +219,26 @@ async def get_news_summary_custom_model(
     :param u: 已驗證的使用者
     :return: 包含摘要和原因的回應
     """
-    if(model_type == "openai"):
-        llm_client = OpenAIClient()
-    elif(model_type == "anthropic"):
-        llm_client = AnthropicClient()
-    else:
-        raise HTTPException(status_code=500, detail=f"Error llm_client: {str(e)}")
-    # 呼叫 LLM 客戶端生成摘要
     try:
+        if(model_type == "openai"):
+            llm_client = OpenAIClient()
+        elif(model_type == "anthropic"):
+            llm_client = AnthropicClient()
+        else:
+            raise HTTPException(status_code=500, detail="Invalid model_type provided.")
+        # 呼叫 LLM 客戶端生成摘要
         summary_data = llm_client.generate_summary(payload.content)
-        if not summary_data:
-            raise HTTPException(status_code=500, detail="Failed to generate summary.")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating summary: {str(e)}")
 
-    response = {}
-    # 構建回應
-    if summary_data:
-        response["summary"] = summary_data["影響"]
-        response["reason"] = summary_data["原因"]
+        response = {}
+        if summary_data:
+            response["summary"] = summary_data["影響"]
+            response["reason"] = summary_data["原因"]
+    except HTTPException as http_err:
+        capture_exception(http_err)  # 捕捉並記錄 HTTPException
+        raise http_err
+    
+    except Exception as err:
+        capture_exception(err)  # 捕捉其他未知異常
+        raise HTTPException(status_code=500, detail=f"Unexpected error occurred: {str(err)}")
 
     return response
-
-
