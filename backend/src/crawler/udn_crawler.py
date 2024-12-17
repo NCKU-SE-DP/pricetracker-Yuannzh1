@@ -39,6 +39,8 @@ from urllib.parse import quote
 from src.crawler.crawler_base import NewsCrawlerBase, Headline, News, NewsWithSummary
 from typing import Union, Tuple, Optional, Dict
 from pydantic import AnyHttpUrl
+from src.logging_config import logger
+from sentry_sdk import capture_exception
 
 class UDNCrawler(NewsCrawlerBase):
     CHANNEL_ID = 2
@@ -71,15 +73,23 @@ class UDNCrawler(NewsCrawlerBase):
             range(*page) if isinstance(page, tuple) else [page]
         )
         headlines = []
-        for p in page_range:
-            headlines.extend(self._fetch_news(p, search_term))
+        for single_page in page_range:
+            try:
+                headlines.extend(self._fetch_news(single_page, search_term))
+            except Exception as err:
+                logger.error(f"Error fetching headlines on page {single_page}: {err}", exc_info=True)
+                capture_exception(err)
         return headlines
 
     def _fetch_news(self, page: int, search_term: str) -> list[Headline]:
-        params = self._create_search_params(page, search_term)
-        response = self._perform_request(params=params)
-        return self._parse_headlines(response)
-
+        try:
+            params = self._create_search_params(page, search_term)
+            response = self._perform_request(params=params)
+            return self._parse_headlines(response)
+        except Exception as err:
+            logger.error(f"Error in _fetch_news: {err}", exc_info=True)
+            capture_exception(err)
+            raise
     def _create_search_params(self, page: int, search_term: str) -> dict:
         return {
             "page": page,
@@ -93,50 +103,74 @@ class UDNCrawler(NewsCrawlerBase):
             response = get(self.news_website_url, params=params, timeout=self.timeout)
             response.raise_for_status()
             return response
-        except Exception as e:
-            raise ConnectionError(f"Failed to fetch data: {e}")
+        except Exception as err:
+            logger.error(f"Failed to perform request: {err}", exc_info=True)
+            capture_exception(err)
+            raise ConnectionError(f"Failed to fetch data: {err}")
+
 
     @staticmethod
     def _parse_headlines(response: Response) -> list[Headline]:
-        data = response.json()
-        if "lists" not in data:
-            return []
-        return [
-            Headline(title=item["title"], url=item["titleLink"])
-            for item in data["lists"]
-        ]
+        try:
+            data = response.json()
+            if "lists" not in data:
+                return []
+            return [
+                Headline(title=item["title"], url=item["titleLink"])
+                for item in data["lists"]
+            ]
+        except Exception as err:
+            logger.error(f"Error parsing headlines: {err}", exc_info=True)
+            capture_exception(err)
+            raise
 
     def parse(self, url: Union[AnyHttpUrl, str]) -> News:
-        response = self._perform_request(params=None, url=url)
-        soup = BeautifulSoup(response.content, "html.parser")
-        return self._extract_news(soup, url)
+        try:
+            response = self._perform_request(params=None, url=url)
+            soup = BeautifulSoup(response.content, "html.parser")
+            return self._extract_news(soup, url)
+        except Exception as err:
+            logger.error(f"Error parsing article at {url}: {err}", exc_info=True)
+            capture_exception(err)
+            raise
 
     @staticmethod
     def _extract_news(soup: BeautifulSoup, url: str) -> News:
-        title = soup.find("h1", class_="article-content__title").text.strip()
-        time = soup.find("time", class_="article-content__time").text.strip()
-        content_section = soup.find("section", class_="article-content__editor")
-        paragraphs = [
-            p.text.strip()
-            for p in content_section.find_all("p")
-            if p.text.strip() and "▪" not in p.text
-        ]
-        return News(
-            title=title,
-            url=url,
-            time=time,
-            content="\n".join(paragraphs),
-        )
-
+        try:
+            title = soup.find("h1", class_="article-content__title").text.strip()
+            time = soup.find("time", class_="article-content__time").text.strip()
+            content_section = soup.find("section", class_="article-content__editor")
+            paragraphs = [
+                p.text.strip()
+                for p in content_section.find_all("p")
+                if p.text.strip() and "▪" not in p.text
+            ]
+            return News(
+                title=title,
+                url=url,
+                time=time,
+                content="\n".join(paragraphs),
+            )
+        except Exception as err:
+            logger.error(f"Error extracting news content: {err}", exc_info=True)
+            capture_exception(err)
+            raise
 
     def save(self, news: NewsWithSummary, db: Session):
-        db.add(news)
-        self._commit_changes(db)
+        try:
+            db.add(news)
+            self._commit_changes(db)
+        except Exception as err:
+            logger.error(f"Error saving news: {err}", exc_info=True)
+            capture_exception(err)
+            raise
 
     @staticmethod
     def _commit_changes(db: Session):
         try:
             db.commit()
-        except Exception as e:
+        except Exception as err:
             db.rollback()
-            raise RuntimeError(f"Failed to save data: {e}")
+            logger.error(f"Failed to commit database changes: {err}", exc_info=True)
+            capture_exception(err)
+            raise RuntimeError(f"Failed to save data: {err}")
