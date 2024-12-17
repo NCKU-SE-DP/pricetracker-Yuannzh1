@@ -10,11 +10,11 @@ from urllib.parse import quote
 from fastapi import Depends
 from openai import OpenAI
 from src.crawler.udn_crawler import UDNCrawler
-
 from src.llm_client.openai_client import OpenAIClient
+from src.logging_config import logger
+from sentry_sdk import capture_exception
 
 crawler = UDNCrawler()
-
 
 def add_news_to_database(news_data):
     """
@@ -44,7 +44,16 @@ def fetch_news_info_by_search_term(search_term, is_initial=False):
         # 使用 _create_search_params 方法生成参数
         params = crawler._create_search_params(page=1, search_term=search_term)
         response = crawler._perform_request(params=params)
-        all_news_data = response.json()["lists"]
+        try:
+            data = response.json()
+            all_news_data = data.get("lists", [])
+            if not all_news_data:
+                logger.warning("No data found in 'lists' key.")
+        except json.JSONDecodeError as err:
+            logger.error(f"Failed to parse JSON response: {err}", exc_info=True)
+            capture_exception(err)
+            return []
+        
     return all_news_data
 
 def get_article_upvote_details(article_id, uid, db):
@@ -55,48 +64,50 @@ def get_article_upvote_details(article_id, uid, db):
     :param db: 資料庫會話
     :return: 點讚數和是否已被用戶點讚的布林值
     """
-    # 計算該新聞的總點讚數
-    count = (
-        db.query(user_news_association_table)
-        .filter_by(news_articles_id=article_id)
-        .count()
-    )
-     # 檢查該用戶是否已點讚該新聞
-    voted = False
-    if uid:
-        voted = (
-                db.query(user_news_association_table)
-                .filter_by(news_articles_id=article_id, user_id=uid)
-                .first()
-                is not None
-        )
-    return count, voted
+    try:
+        count = db.query(user_news_association_table).filter_by(news_articles_id=article_id).count()
+        voted = False
+        if uid:
+            voted = db.query(user_news_association_table).filter_by(
+                news_articles_id=article_id, user_id=uid
+            ).first() is not None
+        return count, voted
+    except Exception as err:
+        logger.error(f"Error fetching upvote details: {err}", exc_info=True)
+        capture_exception(err)
+        return 0, False
 
 
-def toggle_news_upvoted_status(n_id, u_id, db):
-    existing_upvote = db.execute(
-        select(user_news_association_table).where(
-            user_news_association_table.c.news_articles_id == n_id,
-            user_news_association_table.c.user_id == u_id,
-        )
-    ).scalar()
-
-
-    if existing_upvote:
-        delete_stmt = delete(user_news_association_table).where(
-            user_news_association_table.c.news_articles_id == n_id,
-            user_news_association_table.c.user_id == u_id,
-        )
-        db.execute(delete_stmt)
-        db.commit()
-        return "Upvote removed"
-    else:
-        insert_stmt = insert(user_news_association_table).values(
-            news_articles_id=n_id, user_id=u_id
-        )
-        db.execute(insert_stmt)
-        db.commit()
-        return "Article upvoted"
+def toggle_news_upvoted_status(news_id, user_id, db):
+    try:
+        existing_upvote = db.execute(
+            select(user_news_association_table).where(
+                user_news_association_table.c.news_articles_id == news_id,
+                user_news_association_table.c.user_id == user_id,
+            )
+        ).scalar()
+        if existing_upvote:
+            db.execute(
+                delete(user_news_association_table).where(
+                    user_news_association_table.c.news_articles_id == news_id,
+                    user_news_association_table.c.user_id == user_id,
+                )
+            )
+            db.commit()
+            return "Upvote removed"
+        else:
+            db.execute(
+                insert(user_news_association_table).values(
+                    news_articles_id=news_id, user_id=user_id
+                )
+            )
+            db.commit()
+            return "Article upvoted"
+    except Exception as err:
+        logger.error(f"Error toggling upvote status: {err}", exc_info=True)
+        capture_exception(err)
+        db.rollback()
+        return "Error occurred while updating upvote status"
     
 def get_news_article(llm_client: OpenAIClient, crawler: UDNCrawler, is_initial: bool = False):
     """
@@ -109,10 +120,11 @@ def get_news_article(llm_client: OpenAIClient, crawler: UDNCrawler, is_initial: 
     """
     # 抓取新聞資料
     news_data = fetch_news_info_by_search_term("價格", is_initial=is_initial) #list
-
     for news in news_data:
         title = news["title"]
-
+        if not title:
+            logger.warning("News item missing title.")
+            continue
         # 1. 使用 LLM 判斷新聞與主題的關聯度
         relevance = llm_client.evaluate_relevance(title, "民生用品的價格變化")
         if relevance == "high":
@@ -130,6 +142,7 @@ def get_news_article(llm_client: OpenAIClient, crawler: UDNCrawler, is_initial: 
             add_news_to_database(detailed_news)
 
 
+
 def get_news_exists_status(news_id: int, db: Session) -> bool:
     """
     檢查指定的新聞 ID 是否存在於資料庫中。
@@ -137,4 +150,9 @@ def get_news_exists_status(news_id: int, db: Session) -> bool:
     :param db: 資料庫會話
     :return: 如果新聞存在返回 True，否則返回 False
     """
-    return db.query(NewsArticle).filter_by(id=news_id).first() is not None
+    try:
+        return db.query(NewsArticle).filter_by(id=news_id).first() is not None
+    except Exception as err:
+        logger.error(f"Error checking news existence: {err}", exc_info=True)
+        capture_exception(err)
+        return False
