@@ -7,6 +7,7 @@ on:
       - 'refactor/crawler-oop-implementation'
       - 'fix/integration-test'
       - 'refactor/llm_client'
+      - 'refactor/llm-client-template-methods-pattern'
 
 
   pull_request:
@@ -27,12 +28,11 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install dependencies
+      - name: Install dependencies 
         run: |
           python -m pip install --upgrade pip
-          pip install -r backend/requirements.txt
+          pip install -r backend/requirements.txt 
           pip install pytest pytest-mock pytest-cov
-
       # - name: Run unit tests
       #   env:
       #     OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
