@@ -226,7 +226,7 @@ def upvote_article(id, db= Depends(session_opener), user=Depends(authenticate_us
     :return: 包含操作訊息的字典
     """
     try:
-        logger.info(f"Toggling upvote status for article ID: {id}, user: {u.id}.")
+        logger.info(f"Toggling upvote status for article ID: {id}, user: {user.id}.")
         message = toggle_news_upvoted_status(id, user.id, db)
         logger.info(f"Successfully toggled upvote status: {message}")
         return {"message": message}
