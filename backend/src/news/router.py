@@ -7,7 +7,10 @@ import requests
 import json
 from src.auth.dependencies import authenticate_user_token
 from src.news.schemas import PromptRequest, NewsResponse, NewsSumaryRequestSchema, NewsSumaryCustomModelSchema
+from src.news.schemas import PromptRequest, NewsResponse, NewsSumaryRequestSchema, NewsSumaryCustomModelSchema
 from src.news.dependencies import (
+    session_opener,
+    get_article_upvote_details,
     session_opener,
     get_article_upvote_details,
     fetch_news_info_by_search_term,
@@ -25,10 +28,12 @@ from src.logging_config import logger
 router = APIRouter()
 
 
+
 @router.get("/api/v1/news/news")
 def get_all_news_from_database(db: Session = Depends(session_opener)):
     """
     從資料庫中獲取所有新聞，並包含點讚數和是否已被點讚的狀態。
+
 
 
     :param db: 資料庫會話
@@ -56,11 +61,10 @@ def get_all_news_from_database(db: Session = Depends(session_opener)):
 @router.get("/api/v1/news/user_news")
 
 
+
 def get_user_upvoted_news(db= Depends(session_opener), user=Depends(authenticate_user_token)):
     """
     獲取用戶點讚過的新聞，並包含每篇新聞的點讚數和該用戶是否已點讚的狀態。
-
-
     :param db: 資料庫會話
     :param user: 已驗證的使用者
     :return: 包含點讚和用戶狀態的新聞列表
@@ -92,8 +96,6 @@ def get_user_upvoted_news(db= Depends(session_opener), user=Depends(authenticate
 async def search_news(request: PromptRequest):
     """
     使用 OpenAI 來提取關鍵字並根據關鍵字搜尋新聞內容。
-
-
     :param request: 包含用戶輸入的 prompt
     :param llm_client: OpenAI 客戶端，用於與 LLM 交互
     :return: 搜尋結果的新聞列表
@@ -175,13 +177,12 @@ async def get_news_summary(
 ):
     """
     使用 OpenAI 生成新聞摘要，提取影響和原因。
-
-
     :param payload: 包含新聞內容的請求資料
     :param llm_client: OpenAI 客戶端，用於與 LLM 交互
     :param u: 已驗證的使用者
     :return: 包含摘要和原因的回應
     """
+    llm_client = OpenAIClient()
     llm_client = OpenAIClient()
     response = {}
     try:
@@ -218,8 +219,6 @@ async def get_news_summary(
 def upvote_article(id, db= Depends(session_opener), user=Depends(authenticate_user_token)):
     """
     切換指定新聞的點讚狀態
-
-
     :param id: 新聞 ID
     :param db: 資料庫會話
     :param u: 已驗證的使用者
