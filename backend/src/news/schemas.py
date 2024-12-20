@@ -13,5 +13,6 @@ class NewsSumaryRequestSchema(BaseModel):
 
 class PromptRequest(BaseModel):
     prompt: str
+
 class NewsSumaryCustomModelSchema(BaseModel):
     content: str
