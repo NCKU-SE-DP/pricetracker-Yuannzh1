@@ -66,7 +66,7 @@ def test_register_user():
 
 
 def test_login_for_access_token(test_user):
-    response = client.post("/api/v1/auth/login", data={
+    response = client.post("/api/v1/auth/login", json={
         "username": "testuser",
         "password": "testpassword"
     })
