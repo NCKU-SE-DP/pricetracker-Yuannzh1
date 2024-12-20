@@ -1,4 +1,5 @@
 
+
 import sentry_sdk
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
@@ -13,14 +14,6 @@ from src.price.router import router as price_router
 from src.news.dependencies import fetch_news_info_by_search_term
 from src.crawler.udn_crawler import UDNCrawler
 from src.llm_client.openai_client import OpenAIClient
-
-
-
-sentry_sdk.init(
-    dsn="https://4001ffe917ccb261aa0e0c34026dc343@o4505702629834752.ingest.us.sentry.io/4507694792704000",
-    traces_sample_rate=1.0,
-    profiles_sample_rate=1.0,
-)
 
 app = FastAPI()
 bgs = BackgroundScheduler()

@@ -1,8 +1,8 @@
 from pydantic import BaseModel
 
 class UserAuthSchema(BaseModel):
-    username: str = "Test"
-    password: str = "Test"
+    username: str
+    password: str
 
 class Token(BaseModel):
     access_token: str

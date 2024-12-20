@@ -1,9 +1,11 @@
+
 from abc import ABC, abstractmethod
 from typing import List, Dict, Optional, Any
 from pydantic import BaseModel, Field
 import json
-
-
+from json.decoder import JSONDecodeError
+from src.llm_client.exceptions import ResponseStructError
+from sentry_sdk import capture_exception
 
 # from openai import openAI
 class Message(BaseModel):
@@ -42,26 +44,46 @@ class LLMClientTemplate(ABC):
         通用的 API 請求方法，調用 AISuite 的 client.ChatCompletion.create。
         """
         if not self.client:
-            raise ValueError("Client is not initialized.")
+            raise ValueError("Client should be openai or anthropic")
 
-
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=message_content,
-            temperature=temperature,
-        )
-        return response.choices[0].message.content
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=message_content,
+                temperature=temperature,
+            )
+            if not response.choices or "content" not in response.choices[0].message:
+                raise ResponseStructError("Response structure is invalid.")
+            return response.choices[0].message.content
+        
+        except ValueError as res_err:
+            capture_exception(res_err)
+            raise res_err  # 保留原始異常上下文
+        
+        except Exception as err:
+            capture_exception(err)
+            return "An unexpected error occurred while processing request."
+        
         
 
     def _create_message_content(self, system_role: str, user_content: str) -> List[Dict[str, str]]:
         """
         統一消息格式生成。
         """
-        system_message = Message(role="system", content=system_role)
-        user_message = Message(role="user", content=user_content)
-        message_content = [system_message.dict(), user_message.dict()]
-        return message_content
-
+        try:
+            if not isinstance(user_content, str):
+                raise TypeError("user_content must be strings.")
+            if not user_content:
+                raise ValueError("user_content must be non-empty strings.")
+        
+            system_message = Message(role="system", content=system_role)
+            user_message = Message(role="user", content=user_content)
+            message_content = [system_message.dict(), user_message.dict()]
+            return message_content
+        
+        except Exception as err:
+            # 捕捉異常並記錄到遠端
+            capture_exception(err)
 
     def generate_summary(self,content) -> dict:
         response = {}
@@ -69,10 +91,18 @@ class LLMClientTemplate(ABC):
         message_content = self._create_message_content(system_role,content)
         result = self._perform_request(message_content)
         if result:
-            result = json.loads(result)
-            response["影響"] = result["影響"]
-            response["原因"] = result["原因"]
+            try:
+                # 嘗試解析 JSON
+                result = json.loads(result)
+                response["影響"] = result.get("影響", "未提供影響")
+                response["原因"] = result.get("原因", "未提供原因")
+                
+            except JSONDecodeError as JSON_err:
+                #捕捉 JSON 格式錯誤
+                capture_exception(JSON_err)  # 記錄到遠端監控（如 Sentry）
+                raise ValueError(f"Invalid JSON format in response: {result}") from JSON_err
         return response
+        
    
     def extract_keywords(self,prompt) -> str:
         system_role = "你是一個關鍵字提取機器人，用戶將會輸入一段文字，表示其希望看見的新聞內容，請提取出用戶希望看見的關鍵字，請截取最重要的關鍵字即可，避免出現「新聞」、「資訊」等混淆搜尋引擎的字詞。(僅須回答關鍵字，若有多個關鍵字，請以空格分隔)"

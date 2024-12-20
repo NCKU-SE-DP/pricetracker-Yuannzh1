@@ -7,6 +7,7 @@ from src.crawler.exceptions import DomainMismatchException
 
 from pydantic import BaseModel, Field, AnyHttpUrl
 from typing import Union, List, Tuple
+from src.logging_config import logger
 
 class Headline(BaseModel):
     title: str = Field(
@@ -103,6 +104,7 @@ class NewsCrawlerBase(metaclass=abc.ABCMeta):
         """
 
         if not self._is_valid_url(url):
+            logger.info("validate_and_parse does not pass because of URL does not match website")
             raise DomainMismatchException(url)
         return self.parse(url)
 
