@@ -11,8 +11,8 @@ from src.auth.config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/users/login")
 
-def verify_hashed_password(p1, p2):
-    return pwd_context.verify(p1, p2)
+def verify_hashed_password(password, hashed_password):
+    return pwd_context.verify(password, hashed_password)
 
 
 def check_user_password_is_correct(db, username, password):
