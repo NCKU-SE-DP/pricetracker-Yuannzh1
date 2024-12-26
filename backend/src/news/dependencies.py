@@ -141,11 +141,20 @@ def get_news_article(llm_client: OpenAIClient, crawler: UDNCrawler, is_initial: 
         relevance = llm_client.evaluate_relevance(title, "民生用品的價格變化")
         if relevance == "high":
             # 2. 抓取並解析詳細新聞內容
-            detailed_news = crawler.parse(news["titleLink"]) #News
+            try:
+                detailed_news = crawler.parse(news["titleLink"]) #News
+            except Exception as err:
+                logger.error(f"Error parsing detailed news: {err}", exc_info=True)
+                capture_exception(err)
+                continue
 
             # 3. 使用 LLM 生成新聞摘要
-            summary_data = llm_client.generate_summary(" ".join(detailed_news["content"]))
-        
+            try:
+                summary_data = llm_client.generate_summary(" ".join(detailed_news["content"]))
+            except Exception as err:
+                logger.error(f"Error generating summary: {err}", exc_info=True)
+                capture_exception(err)
+                continue
 
             # 4. 更新新聞詳細內容並存入資料庫
             detailed_news["summary"] = summary_data.get("影響", "")
