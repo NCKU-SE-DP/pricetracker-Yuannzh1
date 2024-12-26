@@ -56,7 +56,7 @@ def fetch_news_info_by_search_term(search_term, is_initial=False):
         
     return all_news_data
 
-def get_article_upvote_details(article_id, uid, db):
+def get_article_upvote_details(article_id, user_id, db):
     """
     根據新聞 ID 獲取點讚數和用戶點讚狀態
     :param article_id: 新聞 ID
@@ -73,9 +73,9 @@ def get_article_upvote_details(article_id, uid, db):
 
     try:    
         voted = False
-        if uid:
+        if user_id:
             voted = db.query(user_news_association_table).filter_by(
-                news_articles_id=article_id, user_id=uid
+                news_articles_id=article_id, user_id=user_id
             ).first() is not None
         return count, voted
     except Exception as err:
