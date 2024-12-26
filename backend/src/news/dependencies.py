@@ -92,6 +92,12 @@ def toggle_news_upvoted_status(news_id, user_id, db):
                 user_news_association_table.c.user_id == user_id,
             )
         ).scalar()
+    except Exception as err:
+        logger.error(f"Error checking existing upvote: {err}", exc_info=True)
+        capture_exception(err)
+        return "Error occurred while updating upvote status"
+    
+    try:
         if existing_upvote:
             db.execute(
                 delete(user_news_association_table).where(
