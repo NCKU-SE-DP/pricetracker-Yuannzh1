@@ -189,7 +189,6 @@ async def get_news_summary(
     :return: 包含摘要和原因的回應
     """
     llm_client = OpenAIClient()
-    llm_client = OpenAIClient()
     response = {}
     try:
         logger.info("Generating news summary using OpenAI.")
