@@ -80,6 +80,7 @@ def get_article_upvote_details(article_id, user_id, db):
         return count, voted
     except Exception as err:
         logger.error(f"Error fetching upvote status: {err}", exc_info=True)
+
         capture_exception(err)
         return 0, False
 

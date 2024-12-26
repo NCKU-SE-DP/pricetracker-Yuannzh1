@@ -43,6 +43,7 @@ from src.logging_config import logger
 from sentry_sdk import capture_exception
 from src.crawler.config import DEFAULT_TIMEOUT
 
+
 class UDNCrawler(NewsCrawlerBase):
     CHANNEL_ID = 2
 

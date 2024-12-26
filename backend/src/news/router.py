@@ -115,7 +115,6 @@ async def search_news(request: PromptRequest):
         logger.error("Unexpected error during keyword extraction.", exc_info=True)
         capture_exception(err)
         return "error: An unexpected error occurred. Please try again."
-
     
     logger.info(f"Searching news with keywords: {keywords}")
     news_items = fetch_news_info_by_search_term(keywords, is_initial=False)
@@ -176,6 +175,7 @@ async def search_news(request: PromptRequest):
 
 
 
+
 @router.post("/api/v1/news/news_summary")
 async def get_news_summary(
     payload: NewsSumaryRequestSchema,
@@ -188,6 +188,7 @@ async def get_news_summary(
     :param u: 已驗證的使用者
     :return: 包含摘要和原因的回應
     """
+    llm_client = OpenAIClient()
     llm_client = OpenAIClient()
     response = {}
     try:
@@ -252,8 +253,7 @@ async def get_news_summary_custom_model(
     :param model_type: 模型類型，"openai" 或 "anthropic"
     :param u: 已驗證的使用者
     :return: 包含摘要和原因的回應
-    """
-    
+    """   
     logger.info(f"Generating news summary using model type: {model_type}.")
     if model_type == "openai":
         llm_client = OpenAIClient()

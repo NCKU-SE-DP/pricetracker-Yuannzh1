@@ -7,6 +7,7 @@ from json.decoder import JSONDecodeError
 from src.llm_client.exceptions import ResponseStructError
 from sentry_sdk import capture_exception
 from src.llm_client.config import SUMMARY_PROMPT, KEYWORD_PROMPT, RELEVENCE_PROMPT
+
 # from openai import openAI
 class Message(BaseModel):
     """
@@ -90,6 +91,7 @@ class LLMClientTemplate(ABC):
         message_content = self._create_message_content(system_role, content)
         response = self._perform_request(message_content)
         return response
+
 
     def generate_summary(self,content) -> dict:
         response = {}
