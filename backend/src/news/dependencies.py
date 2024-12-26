@@ -56,7 +56,7 @@ def fetch_news_info_by_search_term(search_term, is_initial=False):
         
     return all_news_data
 
-def get_article_upvote_details(article_id, uid, db):
+def get_article_upvote_details(article_id, user_id, db):
     """
     根據新聞 ID 獲取點讚數和用戶點讚狀態
     :param article_id: 新聞 ID
@@ -66,14 +66,21 @@ def get_article_upvote_details(article_id, uid, db):
     """
     try:
         count = db.query(user_news_association_table).filter_by(news_articles_id=article_id).count()
+    except Exception as err:
+        logger.error(f"Error fetching upvote count: {err}", exc_info=True)
+        capture_exception(err)
+        return 0, False
+
+    try:    
         voted = False
-        if uid:
+        if user_id:
             voted = db.query(user_news_association_table).filter_by(
-                news_articles_id=article_id, user_id=uid
+                news_articles_id=article_id, user_id=user_id
             ).first() is not None
         return count, voted
     except Exception as err:
-        logger.error(f"Error fetching upvote details: {err}", exc_info=True)
+        logger.error(f"Error fetching upvote status: {err}", exc_info=True)
+
         capture_exception(err)
         return 0, False
 
@@ -86,6 +93,12 @@ def toggle_news_upvoted_status(news_id, user_id, db):
                 user_news_association_table.c.user_id == user_id,
             )
         ).scalar()
+    except Exception as err:
+        logger.error(f"Error checking existing upvote: {err}", exc_info=True)
+        capture_exception(err)
+        return "Error occurred while updating upvote status"
+    
+    try:
         if existing_upvote:
             db.execute(
                 delete(user_news_association_table).where(
@@ -129,11 +142,20 @@ def get_news_article(llm_client: OpenAIClient, crawler: UDNCrawler, is_initial: 
         relevance = llm_client.evaluate_relevance(title, "民生用品的價格變化")
         if relevance == "high":
             # 2. 抓取並解析詳細新聞內容
-            detailed_news = crawler.parse(news["titleLink"]) #News
+            try:
+                detailed_news = crawler.parse(news["titleLink"]) #News
+            except Exception as err:
+                logger.error(f"Error parsing detailed news: {err}", exc_info=True)
+                capture_exception(err)
+                continue
 
             # 3. 使用 LLM 生成新聞摘要
-            summary_data = llm_client.generate_summary(" ".join(detailed_news["content"]))
-        
+            try:
+                summary_data = llm_client.generate_summary(" ".join(detailed_news["content"]))
+            except Exception as err:
+                logger.error(f"Error generating summary: {err}", exc_info=True)
+                capture_exception(err)
+                continue
 
             # 4. 更新新聞詳細內容並存入資料庫
             detailed_news["summary"] = summary_data.get("影響", "")

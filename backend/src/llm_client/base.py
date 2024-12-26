@@ -6,6 +6,7 @@ import json
 from json.decoder import JSONDecodeError
 from src.llm_client.exceptions import ResponseStructError
 from sentry_sdk import capture_exception
+from src.llm_client.config import SUMMARY_PROMPT, KEYWORD_PROMPT, RELEVENCE_PROMPT
 
 # from openai import openAI
 class Message(BaseModel):
@@ -84,12 +85,18 @@ class LLMClientTemplate(ABC):
         except Exception as err:
             # 捕捉異常並記錄到遠端
             capture_exception(err)
+            raise err
+        
+    def _process_request(self, system_role: str, content: str) -> str:
+        message_content = self._create_message_content(system_role, content)
+        response = self._perform_request(message_content)
+        return response
+
 
     def generate_summary(self,content) -> dict:
         response = {}
-        system_role = "你是一個新聞摘要生成機器人，請統整新聞中提及的影響及主要原因 (影響、原因各50個字，請以json格式回答 {'影響': '...', '原因': '...'})"
-        message_content = self._create_message_content(system_role,content)
-        result = self._perform_request(message_content)
+        system_role = SUMMARY_PROMPT
+        result = self._process_request(system_role, content)
         if result:
             try:
                 # 嘗試解析 JSON
@@ -105,14 +112,10 @@ class LLMClientTemplate(ABC):
         
    
     def extract_keywords(self,prompt) -> str:
-        system_role = "你是一個關鍵字提取機器人，用戶將會輸入一段文字，表示其希望看見的新聞內容，請提取出用戶希望看見的關鍵字，請截取最重要的關鍵字即可，避免出現「新聞」、「資訊」等混淆搜尋引擎的字詞。(僅須回答關鍵字，若有多個關鍵字，請以空格分隔)"
-        message_content = self._create_message_content(system_role,prompt)
-        keywords = self._perform_request(message_content)
-        return keywords
+        system_role = KEYWORD_PROMPT
+        return self._process_request(system_role, prompt)
    
     def evaluate_relevance(self,title) -> str:
-        system_role = "你是一個關聯度評估機器人，請評估新聞標題是否與「民生用品的價格變化」相關，並給予'high'、'medium'、'low'評價。(僅需回答'high'、'medium'、'low'三個詞之一)"
-        message_content = self._create_message_content(system_role,title)
-        relevance = self._perform_request(message_content)
-        return relevance
+        system_role = RELEVENCE_PROMPT
+        return self._process_request(system_role, title)
 

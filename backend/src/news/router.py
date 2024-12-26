@@ -7,7 +7,6 @@ import requests
 import json
 from src.auth.dependencies import authenticate_user_token
 from src.news.schemas import PromptRequest, NewsResponse, NewsSumaryRequestSchema, NewsSumaryCustomModelSchema
-from src.news.schemas import PromptRequest, NewsResponse, NewsSumaryRequestSchema, NewsSumaryCustomModelSchema
 from src.news.dependencies import (
     session_opener,
     get_article_upvote_details,
@@ -59,9 +58,6 @@ def get_all_news_from_database(db: Session = Depends(session_opener)):
 
 
 @router.get("/api/v1/news/user_news")
-
-
-
 def get_user_upvoted_news(db= Depends(session_opener), user=Depends(authenticate_user_token)):
     """
     獲取用戶點讚過的新聞，並包含每篇新聞的點讚數和該用戶是否已點讚的狀態。
@@ -119,53 +115,63 @@ async def search_news(request: PromptRequest):
         logger.error("Unexpected error during keyword extraction.", exc_info=True)
         capture_exception(err)
         return "error: An unexpected error occurred. Please try again."
+    
+    logger.info(f"Searching news with keywords: {keywords}")
+    news_items = fetch_news_info_by_search_term(keywords, is_initial=False)
+    for news in news_items:
+        try:
+            response = requests.get(news["titleLink"])
+            response.raise_for_status()
+        except requests.exceptions.RequestException as req_err:
+            logger.error(f"Error fetching news URL: {news['titleLink']}", exc_info=True)
+            capture_exception(req_err)
+            continue
 
+        try:
+            soup = BeautifulSoup(response.text, "html.parser")
+        except Exception as parse_err:
+            logger.error("Error parsing HTML content.", exc_info=True)
+            capture_exception(parse_err)
+            continue
 
+        try:
+            title = soup.find("h1", class_="article-content__title").text
+        except AttributeError as attr_err:
+            logger.error("Error extracting title from news article.", exc_info=True)
+            capture_exception(attr_err)
+            continue
 
-    try:
-        logger.info(f"Searching news with keywords: {keywords}")
-        news_items = fetch_news_info_by_search_term(keywords, is_initial=False)
-        for news in news_items:
-            try:
-                response = requests.get(news["titleLink"])
-                response.raise_for_status()
-            except requests.exceptions.RequestException as req_err:
-                logger.error(f"Error fetching news URL: {news['titleLink']}", exc_info=True)
-                capture_exception(req_err)
-                continue
+        try:
+            time = soup.find("time", class_="article-content__time").text
+        except AttributeError as attr_err:
+            logger.error("Error extracting time from news article.", exc_info=True)
+            capture_exception(attr_err)
+            continue
 
-            try:
-                soup = BeautifulSoup(response.text, "html.parser")
-                title = soup.find("h1", class_="article-content__title").text
-                time = soup.find("time", class_="article-content__time").text
-                content_section = soup.find("section", class_="article-content__editor")
-                paragraphs = [
-                    p.text.strip()
-                    for p in content_section.find_all("p")
-                    if p.text.strip() and "▪" not in p.text
-                ]
+        try:
+            content_section = soup.find("section", class_="article-content__editor")
+            paragraphs = [
+                p.text.strip()
+                for p in content_section.find_all("p")
+                if p.text.strip() and "▪" not in p.text
+            ]
+        except AttributeError as attr_err:
+            logger.error("Error extracting content from news article.", exc_info=True)
+            capture_exception(attr_err)
+            continue
 
-                detailed_news = {
-                    "url": news["titleLink"],
-                    "title": title,
-                    "time": time,
-                    "content": " ".join(paragraphs),
-                    "id": next(_id_counter),
-                }
-                news_list.append(detailed_news)
-
-            except AttributeError as parse_err:
-                logger.error("HTML parsing error for news article.", exc_info=True)
-                capture_exception(parse_err)
-                continue
+        detailed_news = {
+            "url": news["titleLink"],
+            "title": title,
+            "time": time,
+            "content": " ".join(paragraphs),
+            "id": next(_id_counter),
+        }
+        news_list.append(detailed_news)
 
         logger.info("Successfully fetched and parsed news articles.")
         return sorted(news_list, key=lambda x: x["time"], reverse=True)
 
-    except Exception as err:
-        logger.error("Unexpected error during news search.", exc_info=True)
-        capture_exception(err)
-        return "error: An unexpected error occurred while searching for news."
 
 
 
@@ -247,17 +253,16 @@ async def get_news_summary_custom_model(
     :param model_type: 模型類型，"openai" 或 "anthropic"
     :param u: 已驗證的使用者
     :return: 包含摘要和原因的回應
-    """
+    """   
+    logger.info(f"Generating news summary using model type: {model_type}.")
+    if model_type == "openai":
+        llm_client = OpenAIClient()
+    elif model_type == "anthropic":
+        llm_client = AnthropicClient()
+    else:
+        logger.error("Invalid model type provided.")
+        raise HTTPException(status_code=400, detail="Invalid model_type provided.")
     try:
-        logger.info(f"Generating news summary using model type: {model_type}.")
-        if model_type == "openai":
-            llm_client = OpenAIClient()
-        elif model_type == "anthropic":
-            llm_client = AnthropicClient()
-        else:
-            logger.error("Invalid model type provided.")
-            raise HTTPException(status_code=400, detail="Invalid model_type provided.")
-
         summary_data = llm_client.generate_summary(payload.content)
         response = {
             "summary": summary_data["影響"],
@@ -267,7 +272,7 @@ async def get_news_summary_custom_model(
         return response
 
     except HTTPException as http_err:
-        logger.error("HTTP error during custom model summary generation.", exc_info=True)
+        logger.error("HTTP error, LLM might generate wrong type summary", exc_info=True)
         capture_exception(http_err)
         raise http_err
 
