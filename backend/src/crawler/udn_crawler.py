@@ -41,11 +41,12 @@ from typing import Union, Tuple, Optional, Dict
 from pydantic import AnyHttpUrl
 from src.logging_config import logger
 from sentry_sdk import capture_exception
+from src.crawler.config import DEFAULT_TIMEOUT
 
 class UDNCrawler(NewsCrawlerBase):
     CHANNEL_ID = 2
 
-    def __init__(self, timeout: int = 5) -> None:
+    def __init__(self, timeout: int = DEFAULT_TIMEOUT) -> None:
         self.news_website_url = "https://udn.com/api/more"
         self.timeout = timeout
 
@@ -138,23 +139,36 @@ class UDNCrawler(NewsCrawlerBase):
     def _extract_news(soup: BeautifulSoup, url: str) -> News:
         try:
             title = soup.find("h1", class_="article-content__title").text.strip()
+        except AttributeError as err:
+            logger.error(f"Error extracting title: {err}", exc_info=True)
+            capture_exception(err)
+            raise
+
+        try:
             time = soup.find("time", class_="article-content__time").text.strip()
+        except AttributeError as err:
+            logger.error(f"Error extracting time: {err}", exc_info=True)
+            capture_exception(err)
+            raise
+
+        try:
             content_section = soup.find("section", class_="article-content__editor")
             paragraphs = [
                 p.text.strip()
                 for p in content_section.find_all("p")
                 if p.text.strip() and "▪" not in p.text
             ]
-            return News(
-                title=title,
-                url=url,
-                time=time,
-                content="\n".join(paragraphs),
-            )
-        except Exception as err:
-            logger.error(f"Error extracting news content: {err}", exc_info=True)
+        except AttributeError as err:
+            logger.error(f"Error extracting content: {err}", exc_info=True)
             capture_exception(err)
             raise
+
+        return News(
+            title=title,
+            url=url,
+            time=time,
+            content="\n".join(paragraphs),
+        )
 
     def save(self, news: NewsWithSummary, db: Session):
         try:
