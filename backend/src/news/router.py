@@ -253,16 +253,16 @@ async def get_news_summary_custom_model(
     :param u: 已驗證的使用者
     :return: 包含摘要和原因的回應
     """
+    
+    logger.info(f"Generating news summary using model type: {model_type}.")
+    if model_type == "openai":
+        llm_client = OpenAIClient()
+    elif model_type == "anthropic":
+        llm_client = AnthropicClient()
+    else:
+        logger.error("Invalid model type provided.")
+        raise HTTPException(status_code=400, detail="Invalid model_type provided.")
     try:
-        logger.info(f"Generating news summary using model type: {model_type}.")
-        if model_type == "openai":
-            llm_client = OpenAIClient()
-        elif model_type == "anthropic":
-            llm_client = AnthropicClient()
-        else:
-            logger.error("Invalid model type provided.")
-            raise HTTPException(status_code=400, detail="Invalid model_type provided.")
-
         summary_data = llm_client.generate_summary(payload.content)
         response = {
             "summary": summary_data["影響"],
@@ -272,7 +272,7 @@ async def get_news_summary_custom_model(
         return response
 
     except HTTPException as http_err:
-        logger.error("HTTP error during custom model summary generation.", exc_info=True)
+        logger.error("HTTP error, LLM might generate wrong type summary", exc_info=True)
         capture_exception(http_err)
         raise http_err
 
