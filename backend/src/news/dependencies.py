@@ -66,6 +66,12 @@ def get_article_upvote_details(article_id, uid, db):
     """
     try:
         count = db.query(user_news_association_table).filter_by(news_articles_id=article_id).count()
+    except Exception as err:
+        logger.error(f"Error fetching upvote count: {err}", exc_info=True)
+        capture_exception(err)
+        return 0, False
+
+    try:    
         voted = False
         if uid:
             voted = db.query(user_news_association_table).filter_by(
@@ -73,7 +79,7 @@ def get_article_upvote_details(article_id, uid, db):
             ).first() is not None
         return count, voted
     except Exception as err:
-        logger.error(f"Error fetching upvote details: {err}", exc_info=True)
+        logger.error(f"Error fetching upvote status: {err}", exc_info=True)
         capture_exception(err)
         return 0, False
 
