@@ -7,7 +7,6 @@ import requests
 import json
 from src.auth.dependencies import authenticate_user_token
 from src.news.schemas import PromptRequest, NewsResponse, NewsSumaryRequestSchema, NewsSumaryCustomModelSchema
-from src.news.schemas import PromptRequest, NewsResponse, NewsSumaryRequestSchema, NewsSumaryCustomModelSchema
 from src.news.dependencies import (
     session_opener,
     get_article_upvote_details,
@@ -59,9 +58,6 @@ def get_all_news_from_database(db: Session = Depends(session_opener)):
 
 
 @router.get("/api/v1/news/user_news")
-
-
-
 def get_user_upvoted_news(db= Depends(session_opener), user=Depends(authenticate_user_token)):
     """
     獲取用戶點讚過的新聞，並包含每篇新聞的點讚數和該用戶是否已點讚的狀態。
@@ -120,52 +116,62 @@ async def search_news(request: PromptRequest):
         capture_exception(err)
         return "error: An unexpected error occurred. Please try again."
 
+    
+    logger.info(f"Searching news with keywords: {keywords}")
+    news_items = fetch_news_info_by_search_term(keywords, is_initial=False)
+    for news in news_items:
+        try:
+            response = requests.get(news["titleLink"])
+            response.raise_for_status()
+        except requests.exceptions.RequestException as req_err:
+            logger.error(f"Error fetching news URL: {news['titleLink']}", exc_info=True)
+            capture_exception(req_err)
+            continue
 
+        try:
+            soup = BeautifulSoup(response.text, "html.parser")
+        except Exception as parse_err:
+            logger.error("Error parsing HTML content.", exc_info=True)
+            capture_exception(parse_err)
+            continue
 
-    try:
-        logger.info(f"Searching news with keywords: {keywords}")
-        news_items = fetch_news_info_by_search_term(keywords, is_initial=False)
-        for news in news_items:
-            try:
-                response = requests.get(news["titleLink"])
-                response.raise_for_status()
-            except requests.exceptions.RequestException as req_err:
-                logger.error(f"Error fetching news URL: {news['titleLink']}", exc_info=True)
-                capture_exception(req_err)
-                continue
+        try:
+            title = soup.find("h1", class_="article-content__title").text
+        except AttributeError as attr_err:
+            logger.error("Error extracting title from news article.", exc_info=True)
+            capture_exception(attr_err)
+            continue
 
-            try:
-                soup = BeautifulSoup(response.text, "html.parser")
-                title = soup.find("h1", class_="article-content__title").text
-                time = soup.find("time", class_="article-content__time").text
-                content_section = soup.find("section", class_="article-content__editor")
-                paragraphs = [
-                    p.text.strip()
-                    for p in content_section.find_all("p")
-                    if p.text.strip() and "▪" not in p.text
-                ]
+        try:
+            time = soup.find("time", class_="article-content__time").text
+        except AttributeError as attr_err:
+            logger.error("Error extracting time from news article.", exc_info=True)
+            capture_exception(attr_err)
+            continue
 
-                detailed_news = {
-                    "url": news["titleLink"],
-                    "title": title,
-                    "time": time,
-                    "content": " ".join(paragraphs),
-                    "id": next(_id_counter),
-                }
-                news_list.append(detailed_news)
+        try:
+            content_section = soup.find("section", class_="article-content__editor")
+            paragraphs = [
+                p.text.strip()
+                for p in content_section.find_all("p")
+                if p.text.strip() and "▪" not in p.text
+            ]
+        except AttributeError as attr_err:
+            logger.error("Error extracting content from news article.", exc_info=True)
+            capture_exception(attr_err)
+            continue
 
-            except AttributeError as parse_err:
-                logger.error("HTML parsing error for news article.", exc_info=True)
-                capture_exception(parse_err)
-                continue
+        detailed_news = {
+            "url": news["titleLink"],
+            "title": title,
+            "time": time,
+            "content": " ".join(paragraphs),
+            "id": next(_id_counter),
+        }
+        news_list.append(detailed_news)
 
         logger.info("Successfully fetched and parsed news articles.")
         return sorted(news_list, key=lambda x: x["time"], reverse=True)
-
-    except Exception as err:
-        logger.error("Unexpected error during news search.", exc_info=True)
-        capture_exception(err)
-        return "error: An unexpected error occurred while searching for news."
 
 
 
